@@ -1,0 +1,14 @@
+# Login (never commit)
+config.env
+.env
+
+# Personal health data and outputs
+*.csv
+*.png
+*.pdf
+output/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
