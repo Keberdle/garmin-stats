@@ -1,18 +1,18 @@
 ---
 name: garmin-deep-sleep
 description: >-
-  Continue Garmin Connect deep-sleep precursor analysis in Gramin stats project —
+  Continue Garmin Connect deep-sleep precursor analysis in the garmin-stats project —
   fetch daily CSV from Garmin, analyze low/high Deep Sleep nights (P10/P90) and
   D-1..D-3 precursors (calories, steps, stress, sleep). Use when the user mentions
   Garmin stats, deep sleep, sleep anomalies, fetch_garmin_data, analyze_deep_sleep,
-  or continues work described in AGENT.md in this project.
+  or continues work described in AGENTS.md in this project.
 ---
 
 # Garmin Deep Sleep precursors
 
 ## First step
 
-Read project handoff: [`AGENT.md`](../../../AGENT.md) in the Gramin stats project root.
+Read [`AGENTS.md`](../../../AGENTS.md) in the project root (rules, setup, commands). If `AGENT.local.md` exists, it holds the owner's private state; never commit it.
 
 Project path (typical):
 

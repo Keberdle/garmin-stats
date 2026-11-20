@@ -12,3 +12,6 @@ output/
 .venv/
 __pycache__/
 *.pyc
+
+# Personal notes with own health data (local only)
+AGENT.local.md
