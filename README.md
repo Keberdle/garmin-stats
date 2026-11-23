@@ -88,6 +88,7 @@ Je to hledání souvislostí, ne lékařská diagnóza. Souvislost neznamená, �
 .venv/bin/python analyze_deep_sleep.py --percentile 15        # širší výběr: 15 % nejkratších a nejdelších nocí
 .venv/bin/python analyze_deep_sleep.py --days 180 --lag-days 2
 .venv/bin/python analyze_deep_sleep.py --threshold-minutes-low 30 --threshold-minutes-high 90
+.venv/bin/python analyze_deep_sleep.py --ignore-zero-deep     # noci s 0 s hlubokého spánku brát jako chybějící
 ```
 
 ## Když něco nejde

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -85,6 +86,7 @@ class AnalysisResult:
     mirror_rows: list[dict] = field(default_factory=list)
     top_low: list[dict] = field(default_factory=list)
     top_high: list[dict] = field(default_factory=list)
+    zero_deep_nights: int = 0
 
 
 def parse_args() -> argparse.Namespace:
@@ -134,10 +136,16 @@ def parse_args() -> argparse.Namespace:
         default=3,
         help="How many days before extreme night to include (D-1..D-N)",
     )
+    parser.add_argument(
+        "--ignore-zero-deep",
+        action="store_true",
+        help="Treat nights with exactly 0 s of Deep Sleep as missing instead of low",
+    )
     return parser.parse_args()
 
 
-def load_data(csv_path: Path, days: int) -> pd.DataFrame:
+def load_data(csv_path: Path, days: int, ignore_zero_deep: bool = False) -> tuple[pd.DataFrame, int]:
+    """Return the analysed window and the number of zero Deep Sleep nights in it."""
     df = pd.read_csv(csv_path)
     df["Date"] = pd.to_datetime(df["Date"])
     for col in METRICS + ["Deep Sleep"]:
@@ -146,7 +154,14 @@ def load_data(csv_path: Path, days: int) -> pd.DataFrame:
     df = df.sort_values("Date").reset_index(drop=True)
     end_date = df["Date"].max()
     start_date = end_date - pd.Timedelta(days=days - 1)
-    return df[df["Date"] >= start_date].copy()
+    df = df[df["Date"] >= start_date].copy()
+
+    # Garmin reports 0 s of deep sleep on some otherwise normally tracked nights.
+    zero_mask = df["Deep Sleep"] == 0
+    zero_deep_nights = int(zero_mask.sum())
+    if ignore_zero_deep:
+        df.loc[zero_mask, "Deep Sleep"] = np.nan
+    return df, zero_deep_nights
 
 
 def compute_thresholds(
@@ -335,7 +350,7 @@ def top_extreme_nights(
 
 
 def run_analysis(args: argparse.Namespace) -> AnalysisResult:
-    df = load_data(args.csv, args.days)
+    df, zero_deep_nights = load_data(args.csv, args.days, args.ignore_zero_deep)
     thresholds = compute_thresholds(
         df,
         args.percentile,
@@ -372,6 +387,7 @@ def run_analysis(args: argparse.Namespace) -> AnalysisResult:
         mirror_rows=mirror_rows,
         top_low=top_low,
         top_high=top_high,
+        zero_deep_nights=zero_deep_nights,
     )
 
 
@@ -388,7 +404,14 @@ def print_report(result: AnalysisResult, args: argparse.Namespace) -> None:
     print("=" * 72)
     print(f"CSV: {args.csv}")
     print(f"Date range: {df['Date'].min().date()} .. {df['Date'].max().date()} ({len(df)} days)")
-    print(f"WARNING: Latest data ends on {df['Date'].max().date()} — refresh CSV for recent nights.")
+    # The fetch script stops at yesterday, so a one-day-old CSV is up to date.
+    latest = df["Date"].max().date()
+    age_days = (date.today() - latest).days
+    if age_days > 1:
+        print(f"WARNING: Latest data ends on {latest} ({age_days} days ago) — refresh CSV for recent nights.")
+    if result.zero_deep_nights:
+        handling = "ignored as missing" if args.ignore_zero_deep else "counted as low; use --ignore-zero-deep to skip"
+        print(f"NOTE: {result.zero_deep_nights} night(s) with 0 s of Deep Sleep in the window ({handling}).")
     print()
     print("Thresholds:")
     print(f"  Percentile setting: P{th.percentile:.0f} / P{100 - th.percentile:.0f}")
@@ -415,7 +438,8 @@ def print_report(result: AnalysisResult, args: argparse.Namespace) -> None:
             sig = "yes" if row.significant else "no"
             print(
                 f"{METRIC_LABELS.get(row.metric, row.metric):<28} "
-                f"D-{row.lag:>2} {row.pre_mean:10.1f} {row.baseline_mean:10.1f} "
+                f"D-{row.lag:>2} {display_value(row.metric, row.pre_mean):10.1f} "
+                f"{display_value(row.metric, row.baseline_mean):10.1f} "
                 f"{row.diff_pct:+8.1f} {row.p_value:8.4f} {sig:>5}"
             )
         print()

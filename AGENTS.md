@@ -29,6 +29,7 @@ Download the user's daily Garmin Connect data into a local CSV and find what pre
 | Slower requests after HTTP 429 | `.venv/bin/python fetch_garmin_data.py --delay 1` |
 | Analysis (last 365 days, P10/P90, D-1..D-3) | `.venv/bin/python analyze_deep_sleep.py` |
 | Other window / thresholds | `--days 180`, `--percentile 15`, `--lag-days 2`, `--threshold-minutes-low 30`, `--threshold-minutes-high 90` |
+| Treat nights with 0 s of Deep Sleep as missing (default: counted as low) | `--ignore-zero-deep` |
 
 ## Data
 
